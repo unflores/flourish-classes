@@ -179,11 +179,11 @@ abstract class fActiveRecord
 
 	/**
 	 * Handles dynamically registered static method callbacks
-	 * 
+	 *
 	 * Static method callbacks registered through fORM::registerActiveRecordStaticMethod()
 	 * will be delegated via this method. Both this and fORM::registerActiveRecordStaticMethod
 	 * are available to PHP 5.3+ only.
-	 * 
+	 *
 	 * @throws fProgrammerException  When the method cannot be found
 	 * @param  string $method_name  The name of the method called
 	 * @param  array  $parameters   The parameters passed
@@ -1269,9 +1269,10 @@ abstract class fActiveRecord
 		} else {
 			$column_info = $schema->getColumnInfo(fORM::tablize($class));
 			foreach ($column_info as $column => $info) {
-                if(in_array($column, array('inserted_at','created_at'))) // add this here, because we sould'nt have to define it
-                    $info['default'] = new fTimestamp();
-			    $this->values[$column] = NULL;
+				if(in_array($column, array('inserted_at',)) && $info['default'] === NULL ) // add this here, because we sould'nt have to define it
+					$info['default'] = new fTimestamp();
+
+				$this->values[$column] = NULL;
 				if ($info['default'] !== NULL) {
 					self::assign(
 						$this->values,
@@ -2132,10 +2133,10 @@ abstract class fActiveRecord
 			$this->related_records,
 			$this->cache
 		);
-		
+
 		$schema = fORMSchema::retrieve($class);
 		$table  = fORM::tablize($class);
-		
+
 		$column_info = $schema->getColumnInfo($table);
 		foreach ($column_info as $column => $info) {
 			if (fRequest::check($column)) {
@@ -2144,7 +2145,7 @@ abstract class fActiveRecord
 				$this->$method(fRequest::get($column, $cast_to));
 			}
 		}
-		
+
 		fORM::callHookCallbacks(
 			$this,
 			'post::populate()',

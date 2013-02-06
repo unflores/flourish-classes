@@ -300,7 +300,6 @@ class fDatabase
 	 */
 	public function __construct($type, $database, $username=NULL, $password=NULL, $host=NULL, $port=NULL, $timeout=NULL)
 	{
-		$this->$util = new Util($this);
 
 		$valid_types = array('db2', 'mssql', 'mysql', 'oracle', 'postgresql', 'sqlite');
 		if (!in_array($type, $valid_types)) {
@@ -326,6 +325,8 @@ class fDatabase
 		$this->host     = $host;
 		$this->port     = $port;
 		$this->timeout  = $timeout;
+
+		$this->util    = &new fDatabaseExtensions();
 
 		$this->hook_callbacks = array(
 			'unmodified' => array(),

@@ -1,7 +1,8 @@
 <?php
-class Util{
-  public function __construct($d_class){
-    $this->$d_class = $d_class;
+class fDatabaseExtensions{
+
+  public function __construct(){
+
   }
 
   public function selectFrom($table, $terms){
