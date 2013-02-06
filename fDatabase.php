@@ -278,6 +278,10 @@ class fDatabase
 	 */
 	private $username;
 
+	/**
+	 * Used to create selectFrom
+	 */
+	public $util;
 
 	/**
 	 * Configures the connection to a database - connection is not made until the first query is executed
@@ -296,6 +300,8 @@ class fDatabase
 	 */
 	public function __construct($type, $database, $username=NULL, $password=NULL, $host=NULL, $port=NULL, $timeout=NULL)
 	{
+		$this->$util = new Util($this);
+
 		$valid_types = array('db2', 'mssql', 'mysql', 'oracle', 'postgresql', 'sqlite');
 		if (!in_array($type, $valid_types)) {
 			throw new fProgrammerException(
@@ -3018,7 +3024,7 @@ class fDatabase
 		} else {
 			$sql = $statement;
 		}
-
+        Debug::logQuery($sql) ;
 		if (!$result) {
 			if ($result_type) {
 				$result = new $result_type($this, $this->type == 'mssql' ? $this->schema_info['character_set'] : NULL);
@@ -3045,9 +3051,9 @@ class fDatabase
 		if (fCore::getDebug($this->debug)) {
 			fCore::debug(
 				self::compose(
-					'Query time was %1$s seconds for:%2$s',
+					'Query (%1$s sec) : %2$s',
 					$query_time,
-					"\n" . $sql
+					" " . $sql
 				),
 				$this->debug
 			);
@@ -3598,9 +3604,23 @@ class fDatabase
 		}
 		return date('Y-m-d H:i:s', strtotime($value));
 	}
+
+	public function getLastStatement(){
+    if(is_string($this->statement))
+      return $this->statement ;
+    elseif ($this->statement instanceof fStatement)
+      return $this->statement->getSQL();
+  }
+
 }
 
-
+//Function pSQL() was used in old Db class, so for convenience, I create a new one here with the same purpose, avoid a thousand of fORMDatabase::retrieve()
+function pSQL($string,$sql_or_type = 'string')
+{
+    if(!is_string($sql_or_type))
+        $sql_or_type = 'string';
+   return fORMDatabase::retrieve()->escape($sql_or_type, $string);
+}
 
 /**
  * Copyright (c) 2007-2012 Will Bond <will@flourishlib.com>

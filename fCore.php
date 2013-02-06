@@ -781,6 +781,7 @@ class fCore
 		if (count($args) > 1) {
 			$data = $args;
 		}
+		Debug::logQuery(self::dump($data)); return ;
 		if (PHP_SAPI != 'cli') {
 			echo '<pre class="exposed">' . htmlspecialchars((string) self::dump($data), ENT_QUOTES) . '</pre>';
 		} else {
