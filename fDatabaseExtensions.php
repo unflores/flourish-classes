@@ -4,7 +4,7 @@ class Util{
     $this->$d_class = $d_class;
   }
 
-  public static function selectFrom($table, $terms){
+  public function selectFrom($table, $terms){
     list($sql_select, $sql_terms, $order_clause, $sql_limit) = self::_buildSelect($terms);
     $sql = "SELECT $sql_select FROM $table WHERE $sql_terms $order_clause $sql_limit";
 
