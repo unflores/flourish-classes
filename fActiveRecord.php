@@ -1102,7 +1102,7 @@ abstract class fActiveRecord
 	 * clone will return `FALSE` from the ::exists() method until ::store() is
 	 * called.
 	 *
-	 * @internal
+	 *
 	 *
 	 * @return fActiveRecord
 	 */
