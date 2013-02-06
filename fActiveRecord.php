@@ -225,7 +225,7 @@ abstract class fActiveRecord
 	/**
 	 * Sets a value to the `$values` array, preserving the old value in `$old_values`
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  array  &$values      The current values
 	 * @param  array  &$old_values  The old values
@@ -247,7 +247,7 @@ abstract class fActiveRecord
 	/**
 	 * Checks to see if a value has changed
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  array  &$values      The current values
 	 * @param  array  &$old_values  The old values
@@ -279,7 +279,7 @@ abstract class fActiveRecord
 	/**
 	 * Ensures a class extends fActiveRecord
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  string $class  The class to check
 	 * @return boolean  If the class is an fActiveRecord descendant
@@ -300,7 +300,7 @@ abstract class fActiveRecord
 	/**
 	 * Checks to see if a record matches a condition
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  string $operator  The record to check
 	 * @param  mixed  $value     The value to compare to
@@ -459,7 +459,7 @@ abstract class fActiveRecord
 	/**
 	 * Checks to see if a record matches all of the conditions
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  fActiveRecord $record      The record to check
 	 * @param  array         $conditions  The conditions to check - see fRecordSet::filter() for format details
@@ -696,7 +696,7 @@ abstract class fActiveRecord
 	/**
 	 * Ensures that ::configure() has been called for the class
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  string $class  The class to configure
 	 * @return void
@@ -713,7 +713,7 @@ abstract class fActiveRecord
 	/**
 	 * Takes a row of data or a primary key and makes a hash from the primary key
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  fActiveRecord|array|string|int $record   An fActiveRecord object, an array of the records data, an array of primary key data or a scalar primary key value
 	 * @param  string                         $class    The class name, if $record isn't an fActiveRecord
@@ -769,7 +769,7 @@ abstract class fActiveRecord
 	/**
 	 * Checks to see if an old value exists for a column
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  array  &$old_values  The old values
 	 * @param  string $column       The column to set
@@ -784,7 +784,7 @@ abstract class fActiveRecord
 	/**
 	 * Resets the configuration of the class
 	 *
-	 * @internal
+	 *
 	 *
 	 * @return void
 	 */
@@ -801,7 +801,7 @@ abstract class fActiveRecord
 	/**
 	 * Retrieves the oldest value for a column or all old values
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  array   &$old_values  The old values
 	 * @param  string  $column       The column to get
@@ -826,7 +826,7 @@ abstract class fActiveRecord
 	/**
 	 * Ensures a class extends fActiveRecord
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  string $class  The class to verify
 	 * @return void
@@ -1064,15 +1064,10 @@ abstract class fActiveRecord
 
 			case 'populate':
 				$route = isset($parameters[0]) ? $parameters[0] : NULL;
-				$recursive = FALSE;
-				if (is_bool($route)) {
-					$recursive = $route;
-					$route = isset($parameters[1]) ? $parameters[1] : NULL;
-				}
-				
+
 				list ($subject, $route, ) = self::determineSubject($class, $subject, $route);
-				
-				fORMRelated::populateRecords($class, $this->related_records, $subject, $route, $recursive);
+
+				fORMRelated::populateRecords($class, $this->related_records, $subject, $route);
 				return $this;
 
 			case 'tally':
@@ -1269,11 +1264,14 @@ abstract class fActiveRecord
 				}
 			}
 
+
 		// Create an empty array for new objects
 		} else {
 			$column_info = $schema->getColumnInfo(fORM::tablize($class));
 			foreach ($column_info as $column => $info) {
-				$this->values[$column] = NULL;
+                if(in_array($column, array('inserted_at','created_at'))) // add this here, because we sould'nt have to define it
+                    $info['default'] = new fTimestamp();
+			    $this->values[$column] = NULL;
 				if ($info['default'] !== NULL) {
 					self::assign(
 						$this->values,
@@ -1299,16 +1297,31 @@ abstract class fActiveRecord
 	/**
 	 * All requests that hit this method should be requests for callbacks
 	 *
-	 * @internal
+	 *
 	 *
 	 * @param  string $method  The method to create a callback for
 	 * @return callback  The callback for the method requested
 	 */
 	public function __get($method)
 	{
-		return array($this, $method);
+	    if (array_key_exists($method, $this->values ))
+            return $this->values[$method];
+        else
+		    return array($this, $method);
 	}
 
+/**
+	 * All requests that hit this method should be requests for callbacks
+	 *
+	 *
+	 *
+	 * @param  string $method  The method to create a callback for
+	 * @return callback  The callback for the method requested
+	 */
+	public function __set($name,$value)
+	{
+	    $this->set($name,$value);
+	}
 
 	/**
 	 * Configure itself when coming out of the session. Records from the session are NOT hooked into the identity map.
@@ -2098,20 +2111,19 @@ abstract class fActiveRecord
 	}
 
 
-	/*
+	/**
 	 * Sets the values for this record by getting values from the request through the fRequest class
-	 * 
-	 * @param  boolean $recursive  If all one-to-many tables and one-to-one relationships should be populated
+	 *
 	 * @return fActiveRecord  The record object, to allow for method chaining
 	 */
-	public function populate($recursive=FALSE)
+	public function populate()
 	{
 		$class = get_class($this);
-		
+
 		if (fORM::getActiveRecordMethod($class, 'populate')) {
 			return $this->__call('populate', array());
 		}
-		
+
 		fORM::callHookCallbacks(
 			$this,
 			'pre::populate()',
@@ -2142,23 +2154,6 @@ abstract class fActiveRecord
 			$this->cache
 		);
 
-		if ($recursive) { 
-			$one_to_many_relationships = $schema->getRelationships($table, 'one-to-many');
-			foreach ($one_to_many_relationships as $relationship) { 
-				$route_name = fORMSchema::getRouteNameFromRelationship('one-to-many', $relationship);
-				$related_class = fORM::classize($relationship['related_table']);
-				$method = 'populate' . fGrammar::pluralize($related_class);
-				$this->$method(TRUE, $route_name);
-			}
-
-			$one_to_one_relationships = $schema->getRelationships($table, 'one-to-one');
-			foreach ($one_to_one_relationships as $relationship) { 
-				$route_name = fORMSchema::getRouteNameFromRelationship('one-to-one', $relationship);
-				$related_class = fORM::classize($relationship['related_table']);
-				$this->__call('populate' . $related_class, array(TRUE, $route_name));
-			}
-		}
-		
 		return $this;
 	}
 
@@ -2733,9 +2728,9 @@ abstract class fActiveRecord
 		}
 
 		// We consider an empty string or a string of spaces to be equivalent to NULL
-		if ($value === '' || (is_string($value) && trim($value) === '')) {
-			$value = NULL;
-		}
+		// if ($value === '' || (is_string($value) && trim($value) === '')) {
+		// 	$value = NULL;
+		// }
 
 		$class = get_class($this);
 		$value = fORM::objectify($class, $column, $value);
@@ -3036,6 +3031,27 @@ abstract class fActiveRecord
 				$validation_messages
 			);
 		}
+	}
+
+
+	public function toArray()
+	{
+	    return $this->values;
+	}
+
+	public function setValues(array $name_value)
+	{
+	    if(count($name_value) >0)
+	    {
+	        foreach ($name_value as $name => $value)
+	        {
+	           $this->__set($name, $value);
+	        }
+	    }
+	}
+	public function save($force_cascade=FALSE)
+	{
+	   return (bool) $this->store($force_cascade);
 	}
 }
 
