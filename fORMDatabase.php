@@ -11,39 +11,8 @@
  * @link       http://flourishlib.com/fORMDatabase
  *
  * @version    1.0.0b32
- * @changes    1.0.0b32  Added support to ::addWhereClause() for the `^~` and `$~` operators [wb, 2011-06-20]
- * @changes    1.0.0b31  Fixed a bug with ::addWhereClause() generating invalid SQL [wb, 2011-05-10]
- * @changes    1.0.0b30  Fixed ::insertFromAndGroupByClauses() to insert `MAX()` around columns in related tables in the `ORDER BY` clause when a `GROUP BY` is used [wb, 2011-02-03]
- * @changes    1.0.0b29  Added code to handle old PCRE engines that don't support unicode character properties [wb, 2010-12-06]
- * @changes    1.0.0b28  Fixed a bug in the fProgrammerException that is thrown when an improperly formatted OR condition is provided [wb, 2010-11-24]
- * @changes    1.0.0b27  Fixed ::addWhereClause() to ignore fuzzy search clauses with no values to match [wb, 2010-10-19]
- * @changes    1.0.0b26  Fixed ::insertFromAndGroupByClauses() to handle SQL where a table is references in more than one capitalization [wb, 2010-07-26]
- * @changes    1.0.0b25  Fixed ::insertFromAndGroupByClauses() to properly handle recursive relationships [wb, 2010-07-22]
- * @changes    1.0.0b24  Fixed ::parseSearchTerms() to work with non-ascii terms [wb, 2010-06-30]
- * @changes    1.0.0b23  Fixed error messages in ::retrieve() [wb, 2010-04-23]
- * @changes    1.0.0b22  Added support for IBM DB2, fixed an issue with building record sets or records that have recursive relationships [wb, 2010-04-13]
- * @changes    1.0.0b21  Changed ::injectFromAndGroupByClauses() to be able to handle table aliases that contain other aliases inside of them [wb, 2010-03-03]
- * @changes    1.0.0b20  Fixed a bug where joining to a table two separate ways could cause table alias issues and incorrect SQL to be generated [wb, 2009-12-16]
- * @changes    1.0.0b19  Added the ability to compare columns with the `=:`, `!:`, `<:`, `<=:`, `>:` and `>=:` operators [wb, 2009-12-08]
- * @changes    1.0.0b18  Fixed a bug affecting where conditions with columns that are not null but have a default value [wb, 2009-11-03]
- * @changes    1.0.0b17  Added support for multiple databases [wb, 2009-10-28]
- * @changes    1.0.0b16  Internal Backwards Compatibility Break - Renamed methods and significantly changed parameters and functionality for SQL statements to use value placeholders, identifier escaping and to handle schemas [wb, 2009-10-22]
- * @changes    1.0.0b15  Streamlined intersection operator SQL and added support for the second value being NULL [wb, 2009-09-21]
- * @changes    1.0.0b14  Added support for the intersection operator `><` to ::createWhereClause() [wb, 2009-07-13]
- * @changes    1.0.0b13  Added support for the `AND LIKE` operator `&~` to ::createWhereClause() [wb, 2009-07-09]
- * @changes    1.0.0b12  Added support for the `NOT LIKE` operator `!~` to ::createWhereClause() [wb, 2009-07-08]
- * @changes    1.0.0b11  Added support for concatenated columns to ::escapeBySchema() [cr-imarc, 2009-06-19]
- * @changes    1.0.0b10  Updated ::createWhereClause() to properly handle NULLs for arrays of values when doing = and != comparisons [wb, 2009-06-17]
- * @changes    1.0.0b9   Changed replacement values in preg_replace() calls to be properly escaped [wb, 2009-06-11]
- * @changes    1.0.0b8   Fixed a bug with ::creatingWhereClause() where a null value would not be escaped property [wb, 2009-05-12]
- * @changes    1.0.0b7   Fixed a bug where an OR condition in ::createWhereClause() could not have one of the values be an array [wb, 2009-04-22]
- * @changes    1.0.0b6   ::insertFromAndGroupByClauses() will no longer wrap ungrouped columns if in a CAST or CASE statement for ORDER BY clauses of queries with a GROUP BY clause [wb, 2009-03-23]
- * @changes    1.0.0b5   Fixed ::parseSearchTerms() to include stop words when they are the only thing in the search string [wb, 2008-12-31]
- * @changes    1.0.0b4   Fixed a bug where loading a related record in the same table through a one-to-many relationship caused recursion [wb, 2008-12-24]
- * @changes    1.0.0b3   Fixed a bug from 1.0.0b2 [wb, 2008-12-05]
- * @changes    1.0.0b2   Added support for != and <> to ::createWhereClause() and ::createHavingClause() [wb, 2008-12-04]
- * @changes    1.0.0b    The initial implementation [wb, 2007-08-04]
  */
+
 class fORMDatabase
 {
 	// The following constants allow for nice looking callbacks to static methods
@@ -544,7 +513,7 @@ class fORMDatabase
 					array('<>:' => '!:', '!=:' => '!:')
 				);
 				$column   = substr($column, 0, -3);
-			} elseif (in_array(substr($column, -2), array('<=', '>=', '!=', '<>', '!~', '&~', '^~', '$~', '><', '=:', '!:', '<:', '>:'))) {
+			} elseif (in_array(substr($column, -2), array('<=', '>=', '!=', '<>', '!~', '&~', '^~', '$~', '><', '=:', '!:', '<:', '>:', '~~'))) {
 				$operator = strtr(
 					substr($column, -2),
 					array('<>' => '!', '!=' => '!')
@@ -611,7 +580,7 @@ class fORMDatabase
 					$columns = $new_columns;
 
 					// Handle fuzzy searches
-					if ($operator == '~') {
+					if ($operator == '~' || $operator == '~~') {
 
 						// If the value to search is a single string value, parse it for search terms
 						if (sizeof($values) == 1 && is_string($values[0])) {
@@ -634,7 +603,10 @@ class fORMDatabase
 							}
 							$condition[] = '(' . join(' OR ', $sub_condition) . ')';
 						}
-						$params[0] .= ' (' . join(' AND ', $condition) . ') ';
+						if($operator == '~~')
+    						$params[0] .= ' (' . join(' OR ', $condition) . ') ';						
+						else
+    						$params[0] .= ' (' . join(' AND ', $condition) . ') ';
 
 					// Handle intersection
 					} elseif ($operator == '><') {
