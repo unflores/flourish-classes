@@ -746,7 +746,7 @@ class fStatement
 
 			// We want to normally escape all values except strings
 			// since that actually changed the string
-			if (!in_array($placeholder, array('%l', '%s'))) {
+			if (!in_array($placeholder, array('%v','%l', '%s'))) {
 
 				$params[$i] = $this->database->escape($placeholder, $params[$i]);
 
@@ -782,6 +782,7 @@ class fStatement
 
 				case 'mysqli':
 					switch ($placeholder) {
+					    case '%v':
 						case '%l':
 							// Blobs that are larger than the packet size have to have NULL
 							// bound and then the data sent via the long data function

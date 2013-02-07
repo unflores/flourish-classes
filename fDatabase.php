@@ -1115,6 +1115,9 @@ class fDatabase
 		$callback = NULL;
 
 		switch ($sql_or_type) {
+		    case 'point':
+		    case '%v' :
+		         $callback = $this->escapePoint;   
 			case 'blob':
 			case '%l':
 				$callback = $this->escapeBlob;
@@ -1181,7 +1184,49 @@ class fDatabase
 		return $this->escapeSQL($sql, $values, FALSE);
 	}
 
+	/**
+	 * Escapes a blob for use in SQL, includes surround quotes when appropriate
+	 *
+	 * A `NULL` value will be returned as `'NULL'`
+	 *
+	 * @param  string $value  The blob to escape
+	 * @return string  The escaped blob
+	 */
+	private function escapePoint($value)
+	{
+	    $default_value = "GeomFromText( 'POINT(0 0)' )";
+        
+		$this->connect();
 
+		if ($this->type == 'db2') {
+			return "BLOB(X'" . bin2hex($value) . "')";
+
+		} elseif ($this->type == 'mysql') {
+			return "GeomFromText( '$value' )";
+
+		} elseif ($this->type == 'mysqli') {
+			return "GeomFromText( '$value' )";
+
+		} elseif ($this->type == 'postgresql') {
+			$output = '';
+			for ($i=0; $i<strlen($value); $i++) {
+				$output .= '\\\\' . str_pad(decoct(ord($value[$i])), 3, '0', STR_PAD_LEFT);
+			}
+			return "E'" . $output . "'";
+
+		} elseif ($this->extension == 'sqlite') {
+			return "'" . bin2hex($value) . "'";
+
+		} elseif ($this->type == 'sqlite') {
+			return "X'" . bin2hex($value) . "'";
+
+		} elseif ($this->type == 'mssql') {
+			return '0x' . bin2hex($value);
+
+		} elseif ($this->type == 'oracle') {
+			return "'" . bin2hex($value) . "'";
+		}
+	}
 	/**
 	 * Escapes a blob for use in SQL, includes surround quotes when appropriate
 	 *
@@ -1195,7 +1240,13 @@ class fDatabase
 		if ($value === NULL) {
 			return 'NULL';
 		}
-
+		
+		$pattern = '/^POINT\([0-9]+(\.[0-9]+)? [0-9]+(\.[0-9]+)?\)$/' ; //MySql
+        if(is_string($value) && (preg_match($pattern, $value) > 0))
+        {
+            return  $this->escapePoint($value);
+        }
+            
 		$this->connect();
 
 		if ($this->type == 'db2') {
@@ -1462,6 +1513,8 @@ class fDatabase
 
 		foreach ($pieces as $piece) {
 			switch ($piece) {
+    		    case '%v' :
+	    	         $callback = $this->escapePoint;
 				case '%l':
 					$callback = $this->escapeBlob;
 					break;

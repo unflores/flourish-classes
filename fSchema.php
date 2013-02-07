@@ -2969,6 +2969,7 @@ class fSchema
 					$this->merged_column_info[$table][$column]['placeholder'] = strtr(
 						$info['type'],
 						array(
+						    'point'     => '%v',
 							'blob'      => '%l',
 							'boolean'   => '%b',
 							'date'      => '%d',
