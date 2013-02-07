@@ -326,7 +326,7 @@ class fDatabase
 		$this->port     = $port;
 		$this->timeout  = $timeout;
 
-		$this->util    = &new fDatabaseExtensions();
+		$this->util    = new fDatabaseExtensions();
 
 		$this->hook_callbacks = array(
 			'unmodified' => array(),
