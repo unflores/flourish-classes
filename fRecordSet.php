@@ -203,7 +203,7 @@ class fRecordSet implements IteratorAggregate, ArrayAccess, Countable
 	 * @param  integer $page              The page offset to use when limiting records
 	 * @return fRecordSet  A set of fActiveRecord objects
 	 */
-	static public function build($class, $where_conditions=array(), $order_bys=array(), $limit=NULL, $page=NULL)
+	static public function build($class, $where_conditions=array(), $order_bys=array(), $limit=NULL, $page=NULL, $asArray = false)
 	{
 		fActiveRecord::validateClass($class);
 		fActiveRecord::forceConfigure($class);
@@ -275,7 +275,7 @@ class fRecordSet implements IteratorAggregate, ArrayAccess, Countable
 			$page = 1;
 		}
 
-		return new fRecordSet($class, call_user_func_array($db->translatedQuery, $params), $non_limited_count_sql, $limit, $page);
+		return new fRecordSet($class, call_user_func_array($db->translatedQuery, $params), $non_limited_count_sql, $limit, $page , $asArray );
 	}
 
 
@@ -595,7 +595,7 @@ class fRecordSet implements IteratorAggregate, ArrayAccess, Countable
 	 * @param  integer        $page               The page of records that was built
 	 * @return fRecordSet
 	 */
-	protected function __construct($class, $records=NULL, $non_limited_count=NULL, $limit=NULL, $page=1)
+	protected function __construct($class, $records=NULL, $non_limited_count=NULL, $limit=NULL, $page=1 , $asArray = false)
 	{
 		$this->class = (is_array($class) && count($class) == 1) ? current($class) : $class;
 
@@ -605,7 +605,11 @@ class fRecordSet implements IteratorAggregate, ArrayAccess, Countable
 
 		if ($records && is_object($records) && $records instanceof Iterator) {
 			while ($records->valid()) {
-				$this->records[] = new $class($records);
+                $a = new $class($records);
+			    if($asArray)
+			        $this->records[] = $a->toArray() ;
+			    else
+    				$this->records[] = $a ;
 				$records->next();
 			}
 		}
