@@ -1306,7 +1306,12 @@ abstract class fActiveRecord
 	public function __get($method)
 	{
 	    if (array_key_exists($method, $this->values ))
-            return $this->values[$method];
+	    {    
+	        if($this->values[$method] instanceof fTimestamp || $this->values[$method] instanceof fDate)
+    	        return "" .$this->values[$method] ;
+	        else
+	            return $this->values[$method];
+	    }
         else
 		    return array($this, $method);
 	}
