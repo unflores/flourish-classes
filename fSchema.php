@@ -2264,6 +2264,7 @@ class fSchema
 	 */
 	private function findStarToOneRelationships($table)
 	{
+	    $registered_col = array();
 		foreach ($this->merged_keys[$table]['foreign'] as $key) {
 			$temp = array();
 			$temp['table']          = $table;
@@ -2276,7 +2277,25 @@ class fSchema
 				$temp['on_update'] = $key['on_update'];
 			}
 			$this->relationships[$table][$type][] = $temp;
+			$registered_col[] = $key['column']; "::" . $key['foreign_table'];
 		}
+    	foreach ($this->getTables() as $t_look) // Add for route auto detection when a table has a field 'XXX_id' and a table '_XXX' or 'XXX' as a field 'id'
+        {
+            if($t_look === $table)
+                continue ;
+            $temp_key_id = preg_replace('/^_(.*)$/', '$1', $t_look). "_id" ;
+            if(in_array($temp_key_id, array_keys($this->getColumnInfo($table))) && in_array("id", array_keys($this->getColumnInfo($t_look))) && !in_array($temp_key_id."::".$t_look, $registered_col))
+            {
+                Debug::log("Add route on table $table with column $temp_key_id to $t_look on column id", Debug::DEBUG_WARN);
+                $type = 'many-to-one' ;
+                $temp = array();
+    			$temp['table']          = $table;
+    			$temp['column']         = $temp_key_id ; //$key['column'];
+    			$temp['related_table']  = $t_look ; //$key['foreign_table'];
+    			$temp['related_column'] = 'id' ; //$key['foreign_column'];
+                $this->relationships[$table][$type][] = $temp;
+            }    
+        }
 	}
 
 
